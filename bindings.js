@@ -8,16 +8,19 @@ var fs = require('fs')
   , join = path.join
   , dirname = path.dirname
   , exists = fs.existsSync || path.existsSync
+	, pkgname = ''
   , defaults = {
         arrow: process.env.NODE_BINDINGS_ARROW || ' → '
       , compiled: process.env.NODE_BINDINGS_COMPILED_DIR || 'compiled'
+		  , zephyr_compiled: process.env.ZEPHYR_NODE_BINDINGS_COMPILED_DIR || 'zephyr-compiled'
       , platform: process.platform
       , arch: process.arch
       , version: process.versions.node
       , bindings: 'bindings.node'
       , try: [
+			    [ 'zephyr_compiled', 'pkgname', 'version', 'platform', 'arch', 'bindings' ]
           // node-gyp's linked version in the "build" dir
-          [ 'module_root', 'build', 'bindings' ]
+        , [ 'module_root', 'build', 'bindings' ]
           // node-waf and gyp_addon (a.k.a node-gyp)
         , [ 'module_root', 'build', 'Debug', 'bindings' ]
         , [ 'module_root', 'build', 'Release', 'bindings' ]
@@ -60,6 +63,10 @@ function bindings (opts) {
     opts.bindings += '.node'
   }
 
+	if (!opts.pkgname) {
+		opts.pkgname = require(path.join(opts.module_root, 'package.json')).name;
+	}
+
   var tries = []
     , i = 0
     , l = opts.try.length
@@ -98,7 +105,7 @@ module.exports = exports = bindings
  * Used to help find the root directory of a module.
  */
 
-exports.getFileName = function getFileName () {
+function getFileName () {
   var origPST = Error.prepareStackTrace
     , origSTL = Error.stackTraceLimit
     , dummy = {}
@@ -126,6 +133,8 @@ exports.getFileName = function getFileName () {
   return fileName
 }
 
+exports.getFileName = getFileName;
+
 /**
  * Gets the root directory of a module, given an arbitrary filename
  * somewhere in the module tree. The "root directory" is the directory
@@ -135,7 +144,7 @@ exports.getFileName = function getFileName () {
  *   Out: /home/nate/node-native-module
  */
 
-exports.getRoot = function getRoot (file) {
+function getRoot (file) {
   var dir = dirname(file)
     , prev
   while (true) {
@@ -157,3 +166,5 @@ exports.getRoot = function getRoot (file) {
     dir = join(dir, '..')
   }
 }
+
+exports.getRoot = getRoot;
